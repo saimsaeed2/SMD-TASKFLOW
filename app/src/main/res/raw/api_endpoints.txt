@@ -1,0 +1,16 @@
+AUTH API - ENDPOINTS
+
+POST /api/auth/login
+  body: { "email": "...", "password": "..." }
+  returns: { "accessToken": "...", "refreshToken": "..." }
+
+POST /api/auth/refresh
+  body: { "refreshToken": "..." }
+  returns: { "accessToken": "..." }
+
+POST /api/auth/logout
+  header: Authorization: Bearer <accessToken>
+
+Notes
+- Access token expires after 15 minutes.
+- Refresh token expires after 7 days.

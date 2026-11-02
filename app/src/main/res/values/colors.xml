@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="primary">#2F9BF0</color>
+    <color name="navy">#1C1F3A</color>
+    <color name="splash_bg">#F3F3EF</color>
+    <color name="screen_bg">#F6F7FA</color>
+    <color name="text_dark">#1A1D29</color>
+    <color name="text_body">#4B5160</color>
+    <color name="text_gray">#8A90A2</color>
+    <color name="card_stroke">#E9ECF2</color>
+    <color name="input_stroke">#DADFE8</color>
+    <color name="track">#E6EBF2</color>
+    <color name="icon_box">#F1F3F7</color>
+    <color name="tag_bg">#EFE9FF</color>
+    <color name="tag_text">#7A5AF0</color>
+
+    <color name="status_todo">#9AA1B1</color>
+    <color name="status_done">#22B07D</color>
+    <color name="due_today">#D97706</color>
+    <color name="overdue">#E5394B</color>
+    <color name="done_text">#7D8494</color>
+</resources>

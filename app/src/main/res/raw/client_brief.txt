@@ -1,0 +1,19 @@
+CLIENT BRIEF - Service Page Website
+
+Goal
+Build a services page for the company website that clearly lists every
+service with a short description and a starting price.
+
+Style
+- Primary colours: blue and red
+- Clean cards with rounded corners
+- One call-to-action button per card ("Get a quote")
+
+Content
+1. Web Development - from $1,200
+2. Mobile Apps - from $2,500
+3. UI/UX Design - from $800
+4. Maintenance Plans - from $150 / month
+
+Deadline
+First draft for review within two weeks.

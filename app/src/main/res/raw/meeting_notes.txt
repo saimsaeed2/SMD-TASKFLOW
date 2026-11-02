@@ -1,0 +1,13 @@
+MEETING NOTES
+
+Attendees: JD, AL, MK
+
+1. Reviewed progress on open tasks.
+2. Agreed to finish smoke tests before the release build.
+3. Token refresh flow needs one more round of testing.
+4. Next sync: Monday 10:00 AM.
+
+Action items
+- JD: update the checklist
+- AL: share the test report
+- MK: confirm the release date with the client
