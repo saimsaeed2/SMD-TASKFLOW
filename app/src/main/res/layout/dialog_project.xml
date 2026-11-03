@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used by both "+ New Project" and "Edit Project" -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Project name"
+            android:textColor="@color/text_body"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/etProjectName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="1 - 60 characters"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:maxLength="60" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Project tag"
+            android:textColor="@color/text_body"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/etProjectTag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="1 - 20 characters"
+            android:importantForAutofill="no"
+            android:inputType="textCapWords"
+            android:maxLength="20" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Project description"
+            android:textColor="@color/text_body"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/etProjectDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:hint="1 - 500 characters"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textCapSentences"
+            android:maxLength="500"
+            android:minLines="3" />
+
+        <!-- Optional attachment (only shown for New Project) -->
+        <LinearLayout
+            android:id="@+id/layoutAttachment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Attachment (optional)"
+                android:textColor="@color/text_body"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvSelectedAttachment"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="No attachment selected"
+                    android:textColor="@color/text_gray"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnChooseAttachment"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Choose" />
+
+                <Button
+                    android:id="@+id/btnClearAttachment"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Clear"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
