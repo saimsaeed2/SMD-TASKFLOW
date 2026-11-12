@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Home screen.
-     The welcome text, workspace card and search box are ABOVE the ListView (not inside a ScrollView).
+     The welcome text, workspace card and search box are ABOVE the RecyclerView (not inside a ScrollView).
      Only the project rows scroll. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -148,19 +148,17 @@
         android:textColor="@color/text_gray"
         android:textSize="12sp" />
 
-    <!-- 4) Projects list (built-in ListView) -->
+    <!-- 4) Projects list (RecyclerView) -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <ListView
-            android:id="@+id/lvProjects"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvProjects"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:divider="@android:color/transparent"
-            android:dividerHeight="12dp"
             android:paddingBottom="16dp"
             android:scrollbars="none" />
 
