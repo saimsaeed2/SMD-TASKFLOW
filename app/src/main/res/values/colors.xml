@@ -22,4 +22,11 @@
     <color name="due_today">#D97706</color>
     <color name="overdue">#E5394B</color>
     <color name="done_text">#7D8494</color>
+
+    <color name="header_overdue">#E5394B</color>
+    <color name="header_in_progress">#22B07D</color>
+    <color name="header_todo">#2F9BF0</color>
+    <color name="header_done">#22B07D</color>
+    <color name="swipe_done_bg">#22B07D</color>
+    <color name="swipe_delete_bg">#E5394B</color>
 </resources>
