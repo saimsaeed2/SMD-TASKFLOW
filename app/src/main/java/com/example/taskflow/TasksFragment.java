@@ -11,17 +11,18 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-// Tasks tab: search + Status / Priority / Date / Sort + ListView of tasks
+// Tasks tab: search + Status / Priority / Date / Sort + single grouped RecyclerView of tasks
 public class TasksFragment extends Fragment {
 
     private static final String ARG_PROJECT_ID = "project_id";
@@ -32,11 +33,10 @@ public class TasksFragment extends Fragment {
     EditText etSearchTasks;
     Spinner spStatus, spPriority, spDate, spSort;
     TextView tvShowingTasks, tvResetFilters, tvEmptyMessage;
-    ListView lvTasks;
+    RecyclerView rvTasks;
     View layoutEmpty;
     Button btnEmptyAction, btnAddTask;
 
-    ArrayList<Task> shownTasks;    // tasks after search + filters + sort
     TaskAdapter adapter;
 
     // true while WE change the controls in code (so the listeners don't react)
@@ -103,7 +103,7 @@ public class TasksFragment extends Fragment {
         spSort = view.findViewById(R.id.spSort);
         tvShowingTasks = view.findViewById(R.id.tvShowingTasks);
         tvResetFilters = view.findViewById(R.id.tvResetFilters);
-        lvTasks = view.findViewById(R.id.lvTasks);
+        rvTasks = view.findViewById(R.id.rvTasks);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
         tvEmptyMessage = view.findViewById(R.id.tvEmptyMessage);
         btnEmptyAction = view.findViewById(R.id.btnEmptyAction);
@@ -114,15 +114,19 @@ public class TasksFragment extends Fragment {
         setupSpinner(spDate, TaskQuery.DATE_OPTIONS);
         setupSpinner(spSort, TaskQuery.SORT_OPTIONS);
 
-        shownTasks = new ArrayList<>();
-        adapter = new TaskAdapter(requireContext(), shownTasks, this::onTaskChecked);
-        lvTasks.setAdapter(adapter);
+        adapter = new TaskAdapter(new TaskAdapter.OnTaskInteractionListener() {
+            @Override
+            public void onTaskClick(Task task) {
+                openTaskDialog(task);
+            }
 
-        // Click a row -> edit dialog with the full description
-        lvTasks.setOnItemClickListener((parent, v, position, id) -> {
-            Task task = adapter.getItem(position);
-            if (task != null) openTaskDialog(task);
+            @Override
+            public void onTaskChecked(Task task, boolean checked) {
+                TasksFragment.this.onTaskChecked(task, checked);
+            }
         });
+        rvTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvTasks.setAdapter(adapter);
 
         etSearchTasks.addTextChangedListener(new TextWatcher() {
             @Override
@@ -217,9 +221,8 @@ public class TasksFragment extends Fragment {
         if (p == null || adapter == null) return;
 
         ArrayList<Task> result = host.getTaskQuery().apply(p.getTasks());
-        shownTasks.clear();
-        shownTasks.addAll(result);
-        adapter.notifyDataSetChanged();
+        ArrayList<TaskListItem> grouped = TaskListItem.buildGroupedList(result);
+        adapter.submitList(grouped);
 
         tvShowingTasks.setText("Showing " + result.size() + " of " + p.getTotalTasks() + " tasks");
 
