@@ -13,10 +13,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -127,6 +129,7 @@ public class TasksFragment extends Fragment {
         });
         rvTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvTasks.setAdapter(adapter);
+        attachItemTouchHelper();
 
         etSearchTasks.addTextChangedListener(new TextWatcher() {
             @Override
@@ -212,6 +215,57 @@ public class TasksFragment extends Fragment {
     // Checkbox ticked -> Done. Unticked -> back to To do.
     private void onTaskChecked(Task task, boolean checked) {
         task.setStatus(checked ? Task.STATUS_DONE : Task.STATUS_TODO);
+        host.onProjectChanged();
+        refreshList();
+    }
+
+    private void attachItemTouchHelper() {
+        ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView,
+                                        @NonNull RecyclerView.ViewHolder viewHolder) {
+                // Header rows must not be swiped or dragged
+                if (viewHolder.getItemViewType() == TaskAdapter.VIEW_TYPE_HEADER) {
+                    return makeMovementFlags(0, 0);
+                }
+                return makeMovementFlags(0, ItemTouchHelper.LEFT);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int pos = viewHolder.getBindingAdapterPosition();
+                TaskListItem item = adapter.getItemAt(pos);
+                if (item == null || item.isHeader()) {
+                    if (pos != RecyclerView.NO_POSITION) {
+                        adapter.notifyItemChanged(pos);
+                    }
+                    return;
+                }
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    handleSwipeLeftMarkDone(item.getTask(), pos);
+                }
+            }
+        };
+
+        new ItemTouchHelper(callback).attachToRecyclerView(rvTasks);
+    }
+
+    // Swiping left marks an unfinished task Done; already-Done tasks snap back with a Toast.
+    private void handleSwipeLeftMarkDone(Task task, int position) {
+        if (task.isDone()) {
+            adapter.notifyItemChanged(position);
+            Toast.makeText(requireContext(), "Task already completed", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        task.setStatus(Task.STATUS_DONE);
         host.onProjectChanged();
         refreshList();
     }
