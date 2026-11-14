@@ -1,11 +1,14 @@
 package com.example.taskflow;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -17,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -130,6 +134,7 @@ public class TasksFragment extends Fragment {
         rvTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvTasks.setAdapter(adapter);
         attachItemTouchHelper();
+        setupSwipeTouchGuard();
 
         etSearchTasks.addTextChangedListener(new TextWatcher() {
             @Override
@@ -220,6 +225,8 @@ public class TasksFragment extends Fragment {
     }
 
     private void attachItemTouchHelper() {
+        SwipeBackgroundDrawer swipeDrawer = new SwipeBackgroundDrawer(requireContext());
+
         ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView,
@@ -228,7 +235,7 @@ public class TasksFragment extends Fragment {
                 if (viewHolder.getItemViewType() == TaskAdapter.VIEW_TYPE_HEADER) {
                     return makeMovementFlags(0, 0);
                 }
-                return makeMovementFlags(0, ItemTouchHelper.LEFT);
+                return makeMovementFlags(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
             }
 
             @Override
@@ -251,11 +258,63 @@ public class TasksFragment extends Fragment {
 
                 if (direction == ItemTouchHelper.LEFT) {
                     handleSwipeLeftMarkDone(item.getTask(), pos);
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    handleSwipeRightDelete(item.getTask(), pos);
                 }
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder,
+                                    float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE
+                        && viewHolder.getItemViewType() == TaskAdapter.VIEW_TYPE_TASK) {
+                    if (dX < 0) {
+                        swipeDrawer.draw(c, viewHolder.itemView, dX,
+                                R.color.swipe_done_bg, R.drawable.ic_check_circle, "Done");
+                    } else if (dX > 0) {
+                        swipeDrawer.draw(c, viewHolder.itemView, dX,
+                                R.color.swipe_delete_bg, R.drawable.ic_delete, "Delete");
+                    }
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
         };
 
         new ItemTouchHelper(callback).attachToRecyclerView(rvTasks);
+    }
+
+    // Prevents ViewPager2 from intercepting horizontal swipes started on a task card.
+    private void setupSwipeTouchGuard() {
+        final int touchSlop = ViewConfiguration.get(requireContext()).getScaledTouchSlop();
+        rvTasks.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
+            private float startX;
+            private float startY;
+            private boolean onTaskRow;
+
+            @Override
+            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+                int action = e.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    startX = e.getX();
+                    startY = e.getY();
+                    View child = rv.findChildViewUnder(startX, startY);
+                    if (child != null) {
+                        RecyclerView.ViewHolder vh = rv.getChildViewHolder(child);
+                        onTaskRow = vh != null && vh.getItemViewType() == TaskAdapter.VIEW_TYPE_TASK;
+                    } else {
+                        onTaskRow = false;
+                    }
+                } else if (action == MotionEvent.ACTION_MOVE && onTaskRow) {
+                    float dx = Math.abs(e.getX() - startX);
+                    float dy = Math.abs(e.getY() - startY);
+                    if (dx > touchSlop && dx > dy && rv.getParent() != null) {
+                        rv.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                }
+                return false;
+            }
+        });
     }
 
     // Swiping left marks an unfinished task Done; already-Done tasks snap back with a Toast.
@@ -268,6 +327,35 @@ public class TasksFragment extends Fragment {
         task.setStatus(Task.STATUS_DONE);
         host.onProjectChanged();
         refreshList();
+    }
+
+    // Swiping right prompts for confirmation before removing the task; cancel restores the row.
+    private void handleSwipeRightDelete(Task task, int position) {
+        Project p = getProject();
+        if (p == null) {
+            adapter.notifyItemChanged(position);
+            return;
+        }
+
+        final boolean[] confirmed = {false};
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Delete task?")
+                .setMessage("Are you sure you want to delete \"" + task.getDescription() + "\"?")
+                .setPositiveButton("Delete", (d, which) -> {
+                    confirmed[0] = true;
+                    p.removeTaskById(task.getId());
+                    host.onProjectChanged();
+                    refreshList();
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+
+        dialog.setOnDismissListener(d -> {
+            if (!confirmed[0] && position >= 0 && position < adapter.getItemCount()) {
+                adapter.notifyItemChanged(position);
+            }
+        });
+        dialog.show();
     }
 
     private void refreshList() {
