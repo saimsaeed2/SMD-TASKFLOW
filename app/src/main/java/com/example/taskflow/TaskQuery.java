@@ -35,6 +35,7 @@ public class TaskQuery implements Serializable {
     public int priority;
     public int dateFilter;
     public int sort;
+    public boolean manualOrder;
 
     public TaskQuery() {
         reset();
@@ -47,6 +48,7 @@ public class TaskQuery implements Serializable {
         priority = ALL;
         dateFilter = DATE_ALL;
         sort = SORT_DUE_ASC;
+        manualOrder = false;
     }
 
     // A task is shown only if it passes the search AND every filter
@@ -65,13 +67,15 @@ public class TaskQuery implements Serializable {
         return true;
     }
 
-    // Returns a NEW list with the matching tasks, sorted
+    // Returns a NEW list with the matching tasks, sorted (unless manual drag order is active)
     public ArrayList<Task> apply(ArrayList<Task> allTasks) {
         ArrayList<Task> result = new ArrayList<>();
         for (Task t : allTasks) {
             if (matches(t)) result.add(t);
         }
-        Collections.sort(result, getComparator());
+        if (!manualOrder) {
+            Collections.sort(result, getComparator());
+        }
         return result;
     }
 

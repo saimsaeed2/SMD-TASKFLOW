@@ -75,6 +75,17 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return items.get(position);
     }
 
+    // Returns only the task objects in their current on-screen order (skipping section headers).
+    public ArrayList<Task> getTasksInDisplayOrder() {
+        ArrayList<Task> ordered = new ArrayList<>();
+        for (TaskListItem item : items) {
+            if (!item.isHeader() && item.getTask() != null) {
+                ordered.add(item.getTask());
+            }
+        }
+        return ordered;
+    }
+
     // Reorders a task row within the same status group only.
     public boolean moveItem(int fromPosition, int toPosition) {
         if (fromPosition < 0 || toPosition < 0

@@ -2,6 +2,9 @@ package com.example.taskflow;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 // A project with its own tasks and attachment links.
@@ -61,6 +64,29 @@ public class Project implements Serializable {
                 tasks.remove(i);
                 return;
             }
+        }
+    }
+
+    // Applies the given visible ordering back into the project's task list without disturbing
+    // any tasks that are currently hidden by active filters.
+    public void syncTaskOrder(List<Task> orderedVisibleTasks) {
+        if (orderedVisibleTasks == null || orderedVisibleTasks.size() < 2) return;
+
+        Set<String> visibleIds = new HashSet<>();
+        for (Task t : orderedVisibleTasks) {
+            visibleIds.add(t.getId());
+        }
+
+        ArrayList<Integer> slots = new ArrayList<>();
+        for (int i = 0; i < tasks.size(); i++) {
+            if (visibleIds.contains(tasks.get(i).getId())) {
+                slots.add(i);
+            }
+        }
+
+        if (slots.size() != orderedVisibleTasks.size()) return;
+        for (int i = 0; i < slots.size(); i++) {
+            tasks.set(slots.get(i), orderedVisibleTasks.get(i));
         }
     }
 
