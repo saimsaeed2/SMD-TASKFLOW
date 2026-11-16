@@ -159,7 +159,10 @@ public class TasksFragment extends Fragment {
                 if (parent == spStatus) q.status = position - 1;          // 0 = All -> -1
                 else if (parent == spPriority) q.priority = position - 1;  // 0 = All -> -1
                 else if (parent == spDate) q.dateFilter = position;
-                else if (parent == spSort) q.sort = position;
+                else if (parent == spSort) {
+                    q.sort = position;
+                    q.manualOrder = false;
+                }
                 refreshList();
             }
 
@@ -229,20 +232,81 @@ public class TasksFragment extends Fragment {
 
         ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
             @Override
+            public boolean isLongPressDragEnabled() {
+                return true;
+            }
+
+            @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView,
                                         @NonNull RecyclerView.ViewHolder viewHolder) {
                 // Header rows must not be swiped or dragged
                 if (viewHolder.getItemViewType() == TaskAdapter.VIEW_TYPE_HEADER) {
                     return makeMovementFlags(0, 0);
                 }
-                return makeMovementFlags(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
+                return makeMovementFlags(
+                        ItemTouchHelper.UP | ItemTouchHelper.DOWN,
+                        ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
+            }
+
+            @Override
+            public boolean canDropOver(@NonNull RecyclerView recyclerView,
+                                       @NonNull RecyclerView.ViewHolder current,
+                                       @NonNull RecyclerView.ViewHolder target) {
+                // Only allow dropping onto another task row in the exact same status group
+                if (current.getItemViewType() != TaskAdapter.VIEW_TYPE_TASK
+                        || target.getItemViewType() != TaskAdapter.VIEW_TYPE_TASK) {
+                    return false;
+                }
+                TaskListItem currentItem = adapter.getItemAt(current.getBindingAdapterPosition());
+                TaskListItem targetItem = adapter.getItemAt(target.getBindingAdapterPosition());
+                return currentItem != null
+                        && targetItem != null
+                        && !currentItem.isHeader()
+                        && !targetItem.isHeader()
+                        && currentItem.getGroup() == targetItem.getGroup();
             }
 
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
                                   @NonNull RecyclerView.ViewHolder target) {
-                return false;
+                int fromPos = viewHolder.getBindingAdapterPosition();
+                int toPos = target.getBindingAdapterPosition();
+                TaskListItem fromItem = adapter.getItemAt(fromPos);
+                TaskListItem toItem = adapter.getItemAt(toPos);
+
+                if (fromItem == null || toItem == null
+                        || fromItem.isHeader() || toItem.isHeader()
+                        || fromItem.getGroup() != toItem.getGroup()) {
+                    return false;
+                }
+
+                boolean moved = adapter.moveItem(fromPos, toPos);
+                if (moved) {
+                    Project p = getProject();
+                    if (p != null) {
+                        host.getTaskQuery().manualOrder = true;
+                        p.syncTaskOrder(adapter.getTasksInDisplayOrder());
+                    }
+                }
+                return moved;
+            }
+
+            @Override
+            public void onSelectedChanged(@Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
+                    viewHolder.itemView.setAlpha(0.92f);
+                    viewHolder.itemView.setElevation(dp(8));
+                }
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                viewHolder.itemView.setAlpha(1f);
+                viewHolder.itemView.setElevation(0f);
             }
 
             @Override
@@ -380,5 +444,9 @@ public class TasksFragment extends Fragment {
         } else {
             layoutEmpty.setVisibility(View.GONE);
         }
+    }
+
+    private float dp(int value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 }
