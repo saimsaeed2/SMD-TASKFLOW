@@ -1,11 +1,14 @@
 package com.example.taskflow;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,6 +17,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -120,6 +124,8 @@ public class FilesFragment extends Fragment {
         });
         rvFiles.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvFiles.setAdapter(adapter);
+        attachSwipeToDelete();
+        setupSwipeTouchGuard();
 
         etSearchFiles.addTextChangedListener(new TextWatcher() {
             @Override
@@ -184,12 +190,95 @@ public class FilesFragment extends Fragment {
     }
 
     private void removeAttachment(AttachmentLink link) {
+        removeAttachment(link, null);
+    }
+
+    private void removeAttachment(AttachmentLink link, @Nullable Runnable onCancelled) {
         Project p = getProject();
-        if (p == null) return;
+        if (p == null) {
+            if (onCancelled != null) onCancelled.run();
+            return;
+        }
         AttachmentDialogs.showRemoveConfirm(requireContext(), link, () -> {
             p.removeAttachmentById(link.getId());
             host.onProjectChanged();
             refreshList();
+        }, onCancelled);
+    }
+
+    private void attachSwipeToDelete() {
+        SwipeBackgroundDrawer swipeDrawer = new SwipeBackgroundDrawer(requireContext());
+
+        ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView,
+                                        @NonNull RecyclerView.ViewHolder viewHolder) {
+                return makeMovementFlags(0, ItemTouchHelper.RIGHT);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int pos = viewHolder.getBindingAdapterPosition();
+                AttachmentLink link = adapter.getAttachmentAt(pos);
+                if (link == null) {
+                    if (pos != RecyclerView.NO_POSITION) {
+                        adapter.notifyItemChanged(pos);
+                    }
+                    return;
+                }
+                removeAttachment(link, () -> {
+                    if (pos >= 0 && pos < adapter.getItemCount()) {
+                        adapter.notifyItemChanged(pos);
+                    }
+                });
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder,
+                                    float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX > 0) {
+                    swipeDrawer.draw(c, viewHolder.itemView, dX,
+                            R.color.swipe_delete_bg, R.drawable.ic_delete, "Remove");
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        };
+
+        new ItemTouchHelper(callback).attachToRecyclerView(rvFiles);
+    }
+
+    // Prevents ViewPager2 from intercepting right-swipes started on an attachment row.
+    private void setupSwipeTouchGuard() {
+        final int touchSlop = ViewConfiguration.get(requireContext()).getScaledTouchSlop();
+        rvFiles.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
+            private float startX;
+            private float startY;
+            private boolean onRow;
+
+            @Override
+            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+                int action = e.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    startX = e.getX();
+                    startY = e.getY();
+                    onRow = rv.findChildViewUnder(startX, startY) != null;
+                } else if (action == MotionEvent.ACTION_MOVE && onRow) {
+                    float dx = e.getX() - startX;
+                    float dy = Math.abs(e.getY() - startY);
+                    if (dx > touchSlop && dx > dy && rv.getParent() != null) {
+                        rv.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                }
+                return false;
+            }
         });
     }
 

@@ -1,14 +1,14 @@
 package com.example.taskflow;
 
 import android.content.Context;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 
@@ -102,6 +102,13 @@ public class AttachmentDialogs {
 
     // The user must type the attachment name to confirm removing it
     public static void showRemoveConfirm(Context context, AttachmentLink link, Runnable onConfirmed) {
+        showRemoveConfirm(context, link, onConfirmed, null);
+    }
+
+    // Prompts the user to type the exact attachment name before removing it.
+    // Calls onCancelled whenever the user cancels, dismisses, or enters a non-matching name.
+    public static void showRemoveConfirm(Context context, AttachmentLink link,
+                                         Runnable onConfirmed, @Nullable Runnable onCancelled) {
         int pad = dp(context, 24);
 
         LinearLayout layout = new LinearLayout(context);
@@ -119,26 +126,31 @@ public class AttachmentDialogs {
         layout.addView(tvMessage);
         layout.addView(etConfirm);
 
+        final boolean[] confirmed = {false};
+
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Remove attachment?")
                 .setView(layout)
-                .setPositiveButton("Remove", (d, which) -> onConfirmed.run())
+                .setPositiveButton("Remove", null)
                 .setNegativeButton("Cancel", null)
                 .create();
 
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false));
+        dialog.setOnShowListener(d ->
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    String entered = etConfirm.getText().toString().trim();
+                    if (entered.equals(link.getName())) {
+                        confirmed[0] = true;
+                        onConfirmed.run();
+                        dialog.dismiss();
+                    } else {
+                        Toast.makeText(context, "Attachment name does not match", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    }
+                }));
 
-        etConfirm.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) { }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                boolean matches = s.toString().trim().equals(link.getName());
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(matches);
+        dialog.setOnDismissListener(d -> {
+            if (!confirmed[0] && onCancelled != null) {
+                onCancelled.run();
             }
         });
 
