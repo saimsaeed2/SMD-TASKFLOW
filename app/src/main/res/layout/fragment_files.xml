@@ -89,13 +89,11 @@
         android:layout_marginTop="10dp"
         android:layout_weight="1">
 
-        <ListView
-            android:id="@+id/lvFiles"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFiles"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:divider="@android:color/transparent"
-            android:dividerHeight="10dp"
             android:paddingBottom="8dp"
             android:scrollbars="none" />
 

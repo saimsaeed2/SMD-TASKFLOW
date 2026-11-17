@@ -9,19 +9,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 
-// Files tab: search + type chips + ListView of attachment links
+// Files tab: search + type chips + RecyclerView of attachment links
 public class FilesFragment extends Fragment {
 
     private static final String ARG_PROJECT_ID = "project_id";
@@ -33,11 +34,10 @@ public class FilesFragment extends Fragment {
     ChipGroup chipGroupType;
     Chip chipAll, chipImages, chipText;
     TextView tvShowingFiles, tvEmptyFilesMessage;
-    ListView lvFiles;
+    RecyclerView rvFiles;
     View layoutEmptyFiles;
     Button btnEmptyFilesAction, btnAddAttachment;
 
-    ArrayList<AttachmentLink> shownFiles;
     AttachmentAdapter adapter;
 
     private boolean updatingControls = false;
@@ -101,14 +101,13 @@ public class FilesFragment extends Fragment {
         chipImages = view.findViewById(R.id.chipImages);
         chipText = view.findViewById(R.id.chipText);
         tvShowingFiles = view.findViewById(R.id.tvShowingFiles);
-        lvFiles = view.findViewById(R.id.lvFiles);
+        rvFiles = view.findViewById(R.id.rvFiles);
         layoutEmptyFiles = view.findViewById(R.id.layoutEmptyFiles);
         tvEmptyFilesMessage = view.findViewById(R.id.tvEmptyFilesMessage);
         btnEmptyFilesAction = view.findViewById(R.id.btnEmptyFilesAction);
         btnAddAttachment = view.findViewById(R.id.btnAddAttachment);
 
-        shownFiles = new ArrayList<>();
-        adapter = new AttachmentAdapter(requireContext(), shownFiles, new AttachmentAdapter.OnAttachmentActionListener() {
+        adapter = new AttachmentAdapter(new AttachmentAdapter.OnAttachmentActionListener() {
             @Override
             public void onPreview(AttachmentLink link) {
                 AttachmentDialogs.showPreview(requireContext(), link);
@@ -119,7 +118,8 @@ public class FilesFragment extends Fragment {
                 removeAttachment(link);
             }
         });
-        lvFiles.setAdapter(adapter);
+        rvFiles.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvFiles.setAdapter(adapter);
 
         etSearchFiles.addTextChangedListener(new TextWatcher() {
             @Override
@@ -203,9 +203,7 @@ public class FilesFragment extends Fragment {
         chipText.setText("Text (" + p.getAttachmentCountByType(CatalogItem.TYPE_TEXT) + ")");
 
         ArrayList<AttachmentLink> result = host.getFileQuery().apply(p.getAttachments());
-        shownFiles.clear();
-        shownFiles.addAll(result);
-        adapter.notifyDataSetChanged();
+        adapter.submitList(result);
 
         tvShowingFiles.setText("Showing " + result.size() + " of " + p.getAttachmentCount() + " attachments");
 
