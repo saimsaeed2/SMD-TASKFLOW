@@ -160,8 +160,10 @@ public class TasksFragment extends Fragment {
                 else if (parent == spPriority) q.priority = position - 1;  // 0 = All -> -1
                 else if (parent == spDate) q.dateFilter = position;
                 else if (parent == spSort) {
-                    q.sort = position;
-                    q.manualOrder = false;
+                    if (q.sort != position) {
+                        q.sort = position;
+                        q.manualOrder = false;
+                    }
                 }
                 refreshList();
             }

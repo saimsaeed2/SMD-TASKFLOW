@@ -1,40 +1,31 @@
-# TaskFlow – Assignment 3
+# TaskFlow – Assignment 4
 
-Java, same style as the class projects (`init()` methods, `findViewById`,
-ViewPager2 + TabLayoutMediator + FragmentStateAdapter, fragment → activity callback interface).
+Java Android app continuing from Assignment 3. Every `ListView` has been replaced with a custom `RecyclerView` using `DiffUtil` (no `notifyDataSetChanged`), grouped multi-view-type tasks, and `ItemTouchHelper` swipe and drag gestures.
 
 ## Screens / flow
-MainActivity (splash) → **Get Started** → HomeActivity → tap a project → ProjectActivity
+MainActivity (splash) → **Get Started** → HomeActivity (`RecyclerView` + `ListAdapter`/`DiffUtil`) → tap a project → ProjectActivity
 (tabs: Overview, Tasks, Files, Discussion). Back arrow / system Back return the updated
-project to the same HomeActivity.
+project to the same HomeActivity and update by project ID.
 
-## Files (app/src/main/java/com/example/taskflow)
+## Assignment 4 Features
+- **HomeActivity**: Replaces `ListView` with `RecyclerView` + `ProjectAdapter` extending `ListAdapter` with `DiffUtil.ItemCallback`. Clicking a project opens `ProjectActivity` via intent extras and updates the existing project by ID on return without calling `notifyDataSetChanged`.
+- **TasksFragment**: Uses a single `RecyclerView` with multi-view-type `TaskAdapter` (`VIEW_TYPE_HEADER` and `VIEW_TYPE_TASK`) powered by `TaskListItem` and `DiffUtil`.
+  - Fixed non-empty group order: **Overdue**, **In Progress**, **To Do**, **Done**.
+  - **Swipe Left**: Marks an unfinished task as Done (moving it to Done and updating header counts immediately); swiping an already-Done task snaps it back and shows `"Task already completed"`.
+  - **Swipe Right**: Opens a delete confirmation `AlertDialog`; confirming removes the task and refreshes counts, while cancelling restores the swiped row.
+  - **Long-Press Drag-to-Reorder**: Reorders tasks strictly within the same status group (cannot drag headers or move across groups) and persists manual order via `Project.syncTaskOrder` and `TaskQuery.manualOrder`.
+- **FilesFragment**: Replaces `ListView` with `RecyclerView` + `AttachmentAdapter` extending `ListAdapter` with `DiffUtil`.
+  - Keeps thumbnail/icon, display name, type metadata, real content Preview dialog (`ImageView` / `TextView`), and remove action.
+  - **Swipe Right**: Prompts the user to type the exact attachment name to confirm removal; cancelling or entering a wrong name keeps the attachment linked and restores the row.
+
+## Key Files (`app/src/main/java/com/example/taskflow`)
 | File | What it does |
 |---|---|
-| `Project`, `Task`, `AttachmentLink` | Data records. Each has a UUID `id`. All `Serializable` so they go through intent extras. |
-| `CatalogItem`, `AttachmentCatalog` | Local file catalog (PNG/JPG in `res/drawable-nodpi`, text in `res/raw`). Links store catalog id + resource id, never bytes. |
-| `SampleData` | Starting projects, created **once** in HomeActivity. |
-| `DateUtils` | Today = device local date. Overdue = due before today AND not Done. |
-| `TaskQuery`, `FileQuery` | Search + filters + sort. Live in ProjectActivity so they survive tab switches. |
-| `HomeActivity`, `ProjectAdapter` | Full project list, search (name or tag), New Project, result handling (replace by ID). |
-| `ProjectActivity`, `ProjectPagerAdapter` | One working project, header, tabs with counts, returns result on Back. |
-| `ProjectHost` | Callback interface the fragments use to talk to ProjectActivity. |
-| `OverviewFragment` / `TasksFragment` / `FilesFragment` / `DiscussionFragment` | The four tabs. Each gets the project ID in its arguments and reads `host.getProject()`. |
-| `TaskAdapter`, `AttachmentAdapter` | Custom ListView rows. |
-| `ProjectDialog`, `TaskDialog`, `AttachmentDialogs` | AlertDialogs (validation, DatePicker, catalog picker, preview, remove confirm). |
-
-## How data stays consistent
-1. Home sends the project to ProjectActivity in a Bundle (Serializable).
-2. ProjectActivity keeps that one object; every fragment reads it through `ProjectHost.getProject()`.
-3. After any change a fragment refreshes itself and calls `host.onProjectChanged()` (header + tab counts).
-   Hidden tabs re-read the project in `onResume()` when they become visible.
-4. On Back, ProjectActivity puts the project in the result intent; Home replaces the project
-   **with the same ID** and refreshes the adapter (no duplicate, no new HomeActivity).
-
-All counts/percentages are calculated from the records (`done * 100 / total`, integer division).
-
-## Notes
-- Tapping an Overview breakdown card clears the task search and priority filter, then sets the
-  status (or Overdue date filter) so the list matches the number on the card. Sort is kept.
-- Unticking a Done task's checkbox sets it back to To do.
-- Sample dates are relative to today, so "Due today" and "Overdue" always show correctly.
+| `Project`, `Task`, `AttachmentLink` | Data records with UUID `id` (`Serializable`), plus `Project.syncTaskOrder` for manual drag order. |
+| `TaskListItem` | Multi-view-type item model (section headers + task snapshots) and `buildGroupedList` grouping helper. |
+| `HomeActivity`, `ProjectAdapter` | Project `RecyclerView` with `ListAdapter` + `DiffUtil`, search, New Project, replace-by-ID result handling. |
+| `TasksFragment`, `TaskAdapter` | Single grouped `RecyclerView`, swipe-left Done, swipe-right Delete confirmation, same-group drag-to-reorder. |
+| `FilesFragment`, `AttachmentAdapter` | Attachment `RecyclerView` with `ListAdapter` + `DiffUtil`, preview dialog, and swipe-right name-confirm delete. |
+| `SwipeBackgroundDrawer` | Custom `ItemTouchHelper` canvas helper for rounded swipe backgrounds, icons, and labels. |
+| `AttachmentDialogs`, `TaskDialog`, `ProjectDialog` | AlertDialogs with validation, preview, and name-match removal confirmation. |
+| `TaskQuery`, `FileQuery` | Search, filters, sort, and manual-order state preserved in `ProjectActivity`. |
